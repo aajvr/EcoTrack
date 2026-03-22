@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'greenScore']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.greenScore is number &&
+             data.greenScore >= 0 && data.greenScore <= 100 &&
+             (!('bio' in data) || data.bio is string) &&
+             (!('location' in data) || data.location is string);
+    }
+
+    function isValidActivity(data) {
+      return data.keys().hasAll(['uid', 'date', 'type', 'value', 'emissions']) &&
+             data.uid == request.auth.uid &&
+             data.type in ['commute', 'meal', 'electricity', 'shopping'] &&
+             data.value is number && data.value >= 0 &&
+             data.emissions is number && data.emissions >= 0;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+
+    match /activities/{activityId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+      allow create: if isAuthenticated() && isValidActivity(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && isValidActivity(request.resource.data);
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+  }
+}

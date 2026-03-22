@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user profile information and their overall sustainability score.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique ID of the user." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "email": { "type": "string", "description": "The user's email address." },
+        "bio": { "type": "string", "description": "The user's short biography." },
+        "location": { "type": "string", "description": "The user's location (City, Country)." },
+        "greenScore": { "type": "number", "description": "The user's current sustainability score." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the user account was created." }
+      },
+      "required": ["uid", "email", "greenScore"]
+    },
+    "Activity": {
+      "title": "Sustainability Activity",
+      "description": "A single logged activity that contributes to the user's carbon footprint.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID for the activity." },
+        "uid": { "type": "string", "description": "The ID of the user who logged this activity." },
+        "date": { "type": "string", "format": "date", "description": "The date the activity occurred." },
+        "type": { "type": "string", "enum": ["commute", "meal", "electricity", "shopping"], "description": "The category of activity." },
+        "category": { "type": "string", "description": "Specific sub-category (e.g., car, vegan)." },
+        "value": { "type": "number", "description": "The quantity (km, kWh, count)." },
+        "emissions": { "type": "number", "description": "Calculated kg CO2 emissions." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the activity was logged." }
+      },
+      "required": ["id", "uid", "date", "type", "value", "emissions"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents."
+    },
+    "/activities/{activityId}": {
+      "schema": "Activity",
+      "description": "Individual activity logs."
+    }
+  }
+}
